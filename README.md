@@ -1,31 +1,33 @@
 # Pokémon Explorer
 
-A simple Pokémon mobile app built with Expo, React Native, TypeScript, Zustand, and Tailwind CSS (NativeWind).
+A beautifully designed Pokémon mobile app built with Expo, TypeScript, React Native Paper, NativeWind, and Zustand.
 
 ## Features
 
-- Browse a list of Pokémon with infinite scroll
-- Search Pokémon by name
-- View detailed stats, types, abilities, height, weight
-- Mark favorites (persisted locally with AsyncStorage)
-- Dark/light mode support (using NativeWind)
+- ✅ Pokémon list with infinite scroll
+- ✅ Search by name (debounced)
+- ✅ Detail screen with stats, types, abilities, height, weight
+- ✅ Favorites (persisted locally with AsyncStorage)
+- ✅ Pull‑to‑refresh
+- ✅ Loading & error states
+- ✅ Clean, modern UI with shadows and gradients
 
 ## Tech Stack
 
-- Expo SDK 55
-- React Native 0.83
-- TypeScript
-- Zustand (state management)
-- React Native Paper (UI components)
-- NativeWind (Tailwind CSS)
-- Axios (API calls)
-- PokeAPI
+- **Expo SDK 55**
+- **React Native 0.83**
+- **TypeScript**
+- **Zustand** (state management + persistence)
+- **React Native Paper** (UI components)
+- **NativeWind v5** (Tailwind CSS for React Native)
+- **Axios** (API calls)
+- **PokeAPI**
 
 ## Setup Instructions
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/pokemon-explorer.git
+   git clone https://github.com/your-username/pokemon-explorer.git
    cd pokemon-explorer
    Install dependencies:
 
@@ -37,17 +39,26 @@ bash
 npx expo start
 Scan the QR code with Expo Go (Android) or the Camera app (iOS).
 
-Notes
-The app uses the official PokeAPI.
+Screenshots
+Add your own screenshots here before submitting.
 
-Favorites are stored locally using AsyncStorage.
+Project Structure
+text
+src/
+├── components/       # Reusable UI (Card, SearchBar, Loading, Error)
+├── store/            # Zustand store (Pokémon, favorites)
+├── services/         # API calls (PokeAPI)
+├── types/            # TypeScript interfaces
+app/
+├── _layout.tsx       # Root layout with PaperProvider & Stack nav
+├── index.tsx         # List screen
+└── pokemon/[id].tsx  # Detail screen
+Future Improvements
+Dark mode toggle
 
-Infinite scroll loads 20 Pokémon at a time.
+Unit tests with Jest
 
-If the API fails, the app falls back to mock data to demonstrate UI.
-
-Known Issues
-None. All core features work as expected.
+Offline support
 
 License
 MIT
@@ -56,19 +67,14 @@ text
 
 ---
 
-## 3. Push to GitHub (If Not Done Yet)
+## 🚀 Final Steps
 
-If you haven’t run the commands above, do:
-
-```bash
-cd D:\PokemonApp
-git init
-git add .
-git commit -m "Initial commit: Pokémon Explorer app"
-git remote add origin https://github.com/YOUR_USERNAME/pokemon-explorer.git
-git push -u origin main
-If you get an error about main not existing, run:
+1. **Replace each file** with the code above.
+2. **Install missing dependencies** (if any):
+   ```bash
+   npm install zustand @react-native-async-storage/async-storage axios
+Clear Metro cache and restart:
 
 bash
-git branch -M main
-git push -u origin main
+npx expo start -c
+Test on a real device (Expo Go).
