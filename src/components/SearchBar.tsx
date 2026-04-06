@@ -21,7 +21,8 @@ export const SearchBar: React.FC<Props> = ({ onSearch }) => {
       placeholder="Search Pokémon"
       onChangeText={handleChange}
       value={query}
-      className="mx-4 my-2"
+      className="mx-4 my-3 rounded-full bg-gray-100"
+      iconColor="#3b82f6"
     />
   );
 };

@@ -7,13 +7,14 @@ export default function RootLayout() {
     <PaperProvider>
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: '#ef4444' },
-          headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: 'bold' },
+          headerStyle: { backgroundColor: '#ffffff' },
+          headerTintColor: '#2c3e50',
+          headerTitleStyle: { fontWeight: '600' },
+          headerShadowVisible: false,
         }}
       >
         <Stack.Screen name="index" options={{ title: 'Pokédex' }} />
-        <Stack.Screen name="pokemon/[id]" options={{ title: 'Pokémon Details' }} />
+        <Stack.Screen name="pokemon/[id]" options={{ title: 'Details' }} />
       </Stack>
     </PaperProvider>
   );

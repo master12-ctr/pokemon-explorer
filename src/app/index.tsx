@@ -7,7 +7,6 @@ import { PokemonCard } from '../components/PokemonCard';
 import { SearchBar } from '../components/SearchBar';
 import { usePokemonStore } from '../store/pokemonStore';
 
-
 export default function HomeScreen() {
   const { pokemons, loading, error, fetchPokemons, loadMore } = usePokemonStore();
   const [searchQuery, setSearchQuery] = useState('');
