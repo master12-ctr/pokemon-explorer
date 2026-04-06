@@ -1,56 +1,74 @@
-# Welcome to your Expo app 👋
+# Pokémon Explorer
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A simple Pokémon mobile app built with Expo, React Native, TypeScript, Zustand, and Tailwind CSS (NativeWind).
 
-## Get started
+## Features
 
-1. Install dependencies
+- Browse a list of Pokémon with infinite scroll
+- Search Pokémon by name
+- View detailed stats, types, abilities, height, weight
+- Mark favorites (persisted locally with AsyncStorage)
+- Dark/light mode support (using NativeWind)
 
+## Tech Stack
+
+- Expo SDK 55
+- React Native 0.83
+- TypeScript
+- Zustand (state management)
+- React Native Paper (UI components)
+- NativeWind (Tailwind CSS)
+- Axios (API calls)
+- PokeAPI
+
+## Setup Instructions
+
+1. Clone the repository:
    ```bash
-   npm install
-   ```
+   git clone https://github.com/YOUR_USERNAME/pokemon-explorer.git
+   cd pokemon-explorer
+   Install dependencies:
 
-2. Start the app
+bash
+npm install
+Start the development server:
 
-   ```bash
-   npx expo start
-   ```
+bash
+npx expo start
+Scan the QR code with Expo Go (Android) or the Camera app (iOS).
 
-In the output, you'll find options to open the app in a
+Notes
+The app uses the official PokeAPI.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Favorites are stored locally using AsyncStorage.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Infinite scroll loads 20 Pokémon at a time.
 
-## Get a fresh project
+If the API fails, the app falls back to mock data to demonstrate UI.
 
-When you're ready, run:
+Known Issues
+None. All core features work as expected.
+
+License
+MIT
+
+text
+
+---
+
+## 3. Push to GitHub (If Not Done Yet)
+
+If you haven’t run the commands above, do:
 
 ```bash
-npm run reset-project
-```
+cd D:\PokemonApp
+git init
+git add .
+git commit -m "Initial commit: Pokémon Explorer app"
+git remote add origin https://github.com/YOUR_USERNAME/pokemon-explorer.git
+git push -u origin main
+If you get an error about main not existing, run:
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+bash
+git branch -M main
+git push -u origin main
