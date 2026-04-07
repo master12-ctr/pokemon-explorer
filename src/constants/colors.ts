@@ -1,7 +1,10 @@
+import { ViewStyle } from 'react-native';
+
 export const colors = {
   primary: '#f97316',
   background: '#FFF7ED',
   card: '#ffffff',
+  backgroundElement: '#f9fafb',
   text: {
     primary: '#111827',
     secondary: '#6b7280',
@@ -15,12 +18,23 @@ export const colors = {
     ghost: '#6b21a5', steel: '#71717a',
   },
   elevation: {
-    low: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-    medium: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
+    low: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+    } as ViewStyle,
+    medium: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
+    } as ViewStyle,
   },
 };
 
-// Helper to get type color safely
 export const getTypeColor = (typeName: string): string => {
   return colors.type[typeName as keyof typeof colors.type] || colors.primary;
 };

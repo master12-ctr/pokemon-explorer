@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePokemonStore } from '../store/pokemonStore';
 import { EvolutionChain, Pokemon, PokemonSpecies } from '../types/pokemon';
 import { parseEvolutionTree } from '../utils/evolutionParser';
@@ -19,37 +19,36 @@ export const usePokemonDetail = (id: string): UsePokemonDetailReturn => {
   const [evolutionChain, setEvolutionChain] = useState<EvolutionChain | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Use ref to prevent multiple fetches
-  const fetchedRef = useRef(false);
-  
+
   const { getPokemonDetails, getPokemonSpecies, getEvolutionChain } = usePokemonStore();
 
   useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-    
+    let isMounted = true;
     const load = async () => {
       setLoading(true);
       try {
         const data = await getPokemonDetails(id);
+        if (!isMounted) return;
         if (!data) throw new Error('No data');
         setPokemon(data);
-        
+
         const speciesData = await getPokemonSpecies(data.id);
+        if (!isMounted) return;
         setSpecies(speciesData);
-        
+
         if (speciesData?.evolution_chain?.url) {
           const chain = await getEvolutionChain(speciesData.evolution_chain.url);
+          if (!isMounted) return;
           setEvolutionChain(chain);
         }
       } catch (err) {
-        setError('Failed to load details');
+        if (isMounted) setError('Failed to load details');
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     load();
+    return () => { isMounted = false; };
   }, [id, getPokemonDetails, getPokemonSpecies, getEvolutionChain]);
 
   const evolutions = evolutionChain ? parseEvolutionTree(evolutionChain.chain) : (pokemon ? [pokemon.name] : []);

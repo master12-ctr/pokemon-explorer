@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import {
-  fetchEvolutionChain,
-  fetchPokemonDetails,
-  fetchPokemonList,
-  fetchPokemonSpecies
+    fetchEvolutionChain,
+    fetchPokemonDetails,
+    fetchPokemonList,
+    fetchPokemonSpecies
 } from '../services/pokeApi';
 import { EvolutionChain, Pokemon, PokemonListItem, PokemonSpecies } from '../types/pokemon';
 
@@ -42,7 +42,6 @@ export const usePokemonStore = create<PokemonStore>((set, get) => ({
 
   fetchPokemons: async () => {
     const { offset, pokemons } = get();
-    // Only skip if we already have data AND we've loaded past the first page
     if (offset > 0 && pokemons.length > 0) {
       console.log('Already loaded, skipping fetch');
       return;
@@ -60,7 +59,7 @@ export const usePokemonStore = create<PokemonStore>((set, get) => ({
       });
     } catch (error: any) {
       console.error('API error:', error.message);
-      set({ error: 'Failed to load Pokémon', loading: false });
+      set({ error: error instanceof Error ? error.message : 'Failed to load Pokémon', loading: false });
     }
   },
 
@@ -77,7 +76,7 @@ export const usePokemonStore = create<PokemonStore>((set, get) => ({
         loading: false,
       });
     } catch (error) {
-      set({ error: 'Failed to load more', loading: false });
+      set({ error: error instanceof Error ? error.message : 'Failed to load more', loading: false });
     }
   },
 
@@ -125,7 +124,12 @@ export const usePokemonStore = create<PokemonStore>((set, get) => ({
     }
   },
 
-  addFavorite: (name) => set((state) => ({ favorites: [...state.favorites, name] })),
-  removeFavorite: (name) => set((state) => ({ favorites: state.favorites.filter((fav) => fav !== name) })),
+  // Prevent duplicate favorites
+  addFavorite: (name) =>
+    set((state) => ({
+      favorites: state.favorites.includes(name) ? state.favorites : [...state.favorites, name],
+    })),
+  removeFavorite: (name) =>
+    set((state) => ({ favorites: state.favorites.filter((fav) => fav !== name) })),
   isFavorite: (name) => get().favorites.includes(name),
 }));

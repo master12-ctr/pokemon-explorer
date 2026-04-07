@@ -1,6 +1,7 @@
 import React from 'react';
-import { Text, View } from 'react-native';
-import { Button } from 'react-native-paper';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { colors, spacing } from '../constants/colors';
+import { typography } from '../constants/typography';
 
 interface Props {
   message: string;
@@ -8,10 +9,13 @@ interface Props {
 }
 
 export const ErrorView: React.FC<Props> = ({ message, onRetry }) => (
-  <View className="flex-1 justify-center items-center p-4">
-    <Text className="text-red-500 text-lg mb-4 text-center">{message}</Text>
-    <Button mode="contained" onPress={onRetry}>
-      Retry
-    </Button>
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg }}>
+   <Text style={[typography.body, { color: 'red', marginBottom: spacing.md }]}>{message}</Text>
+    <TouchableOpacity
+      onPress={onRetry}
+      style={{ backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: 8 }}
+    >
+      <Text style={{ color: '#fff' }}>Retry</Text>
+    </TouchableOpacity>
   </View>
 );

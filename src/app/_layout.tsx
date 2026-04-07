@@ -13,8 +13,10 @@ export default function RootLayout() {
           headerTitleAlign: 'center',
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Pokédex' }} />
+        {/* Hide the default header on home screen – we use our own custom header */}
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="pokemon/[id]" options={{ title: 'Details' }} />
+        <Stack.Screen name="favorites" options={{ title: 'Favorites', headerShown: true }} />
       </Stack>
     </PaperProvider>
   );

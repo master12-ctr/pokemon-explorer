@@ -1,11 +1,6 @@
-import React from 'react';
-import { Dimensions, View } from 'react-native';
-import {
-    VictoryArea,
-    VictoryChart,
-    VictoryPolarAxis,
-    VictoryTheme,
-} from 'victory-native';
+import React, { useMemo } from 'react';
+import { Dimensions, Text, View } from 'react-native';
+import { VictoryArea, VictoryChart, VictoryPolarAxis, VictoryTheme } from 'victory-native';
 
 const { width } = Dimensions.get('window');
 
@@ -18,43 +13,100 @@ interface Props {
   stats: StatData[];
 }
 
-export const RadarChart: React.FC<Props> = ({ stats }) => {
-  const data = stats.map(s => ({ stat: s.name, value: s.value / 255 }));
-  const maxValue = 1;
+const MAX_STAT = 255;
 
-  // Capitalize stat names for display
-  const tickValues = stats.map(s => s.name.charAt(0).toUpperCase() + s.name.slice(1));
+const formatStatName = (name: string): string => {
+  const map: Record<string, string> = {
+    hp: 'HP',
+    attack: 'Atk',
+    defense: 'Def',
+    'special-attack': 'Sp.Atk',
+    'special-defense': 'Sp.Def',
+    speed: 'Speed',
+  };
+  return map[name] || name;
+};
+
+export const RadarChart: React.FC<Props> = ({ stats }) => {
+  const processedData = useMemo(() => {
+    if (!stats || stats.length === 0) return { data: [], labels: [] };
+
+    const normalized = stats.map(stat => ({
+      label: formatStatName(stat.name),
+      value: stat.value / MAX_STAT,
+      rawValue: stat.value,
+    }));
+
+    const closed = [...normalized, normalized[0]];
+    const labels = normalized.map(n => n.label);
+
+    return { data: closed, labels };
+  }, [stats]);
+
+  if (!stats || stats.length === 0) {
+    return (
+      <View style={{ alignItems: 'center', marginVertical: 20 }}>
+        <Text style={{ color: '#9ca3af' }}>No stat data available</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={{ alignItems: 'center', marginVertical: 20 }}>
+      <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 8 }}>Base Stats Overview</Text>
+
       <VictoryChart
         polar
         theme={VictoryTheme.material}
-        domain={{ y: [0, maxValue] }}
+        domain={{ y: [0, 1] }}
         width={width - 40}
-        height={280}
+        height={320}
       >
+        {/* Concentric rings only – no labels inside */}
         <VictoryPolarAxis
           dependentAxis
           tickValues={[0.2, 0.4, 0.6, 0.8, 1]}
-          labelPlacement="vertical"
-        />
-        <VictoryPolarAxis
-          tickValues={tickValues}
+          tickFormat={() => ''} // remove numeric labels
           style={{
-            axisLabel: { padding: 10 },
-            tickLabels: { fontSize: 10, fill: '#6b7280' },
+            grid: { stroke: '#e5e7eb', strokeWidth: 0.8 },
+            axis: { stroke: '#d1d5db' },
+            tickLabels: { fontSize: 0 }, // hide labels
           }}
         />
+
+        {/* No stat name labels on the axes – hidden */}
+        <VictoryPolarAxis
+          tickValues={processedData.labels}
+          style={{
+            axis: { stroke: 'transparent' },
+            tickLabels: { fontSize: 0 }, // hide labels
+          }}
+        />
+
         <VictoryArea
-          data={data}
-          x="stat"
+          data={processedData.data}
+          x="label"
           y="value"
           style={{
-            data: { fill: '#f97316', fillOpacity: 0.6, stroke: '#f97316', strokeWidth: 2 },
+            data: {
+              fill: '#f97316',
+              fillOpacity: 0.35,
+              stroke: '#f97316',
+              strokeWidth: 2.5,
+            },
           }}
         />
       </VictoryChart>
+
+      {/* Stat names and values displayed outside (clean) */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 12 }}>
+        {stats.map(stat => (
+          <View key={stat.name} style={{ marginHorizontal: 8, marginVertical: 4, alignItems: 'center' }}>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#4b5563' }}>{formatStatName(stat.name)}</Text>
+            <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#f97316' }}>{stat.value}</Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 };
