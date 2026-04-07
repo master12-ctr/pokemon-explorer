@@ -1,28 +1,19 @@
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import { Searchbar } from 'react-native-paper';
 
 interface Props {
   onSearch: (query: string) => void;
+  value: string;
 }
 
-export const SearchBar: React.FC<Props> = ({ onSearch }) => {
-  const [query, setQuery] = useState('');
-
-  const handleChange = useCallback(
-    (text: string) => {
-      setQuery(text);
-      onSearch(text);
-    },
-    [onSearch]
-  );
-
+export const SearchBar: React.FC<Props> = ({ onSearch, value }) => {
   return (
     <Searchbar
       placeholder="Search Pokémon"
-      onChangeText={handleChange}
-      value={query}
-      className="mx-4 my-3 rounded-full bg-gray-100"
-      iconColor="#3b82f6"
+      onChangeText={onSearch}
+      value={value}
+      style={{ margin: 12, borderRadius: 10, elevation: 2 }}
+      inputStyle={{ fontSize: 16 }}
     />
   );
 };

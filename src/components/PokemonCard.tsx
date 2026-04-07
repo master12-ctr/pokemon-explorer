@@ -1,27 +1,59 @@
-import React from 'react';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import React, { memo, useRef } from 'react';
+import { Animated, Image, Pressable, Text, View } from 'react-native';
 import { Card } from 'react-native-paper';
+import { shadowStyle, spacing } from '../constants/spacing';
+import { PokemonListItem } from '../types/pokemon';
 
 interface Props {
-  pokemon: { name: string; url: string };
+  pokemon: PokemonListItem;
   onPress: (name: string) => void;
+  screenWidth: number;
 }
 
-export const PokemonCard: React.FC<Props> = ({ pokemon, onPress }) => {
+export const PokemonCard: React.FC<Props> = memo(({ pokemon, onPress, screenWidth }) => {
   const id = pokemon.url.split('/').filter(Boolean).pop();
   const imageUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+  const cardImageSize = Math.min(screenWidth * 0.15, 100);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      friction: 6,
+      tension: 200,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 6,
+      tension: 200,
+    }).start();
+  };
 
   return (
-    <TouchableOpacity onPress={() => onPress(pokemon.name)} activeOpacity={0.8}>
-      <Card className="m-2 rounded-2xl bg-white shadow-lg overflow-hidden">
-        <View className="items-center p-4">
-          <Image source={{ uri: imageUrl }} style={{ width: 110, height: 110 }} />
-          <Text className="text-lg font-bold capitalize mt-3 text-gray-800">
-            {pokemon.name}
-          </Text>
-          <Text className="text-sm text-gray-500">#{id}</Text>
-        </View>
-      </Card>
-    </TouchableOpacity>
+    <Pressable
+      onPress={() => onPress(pokemon.name)}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={{ flex: 1 }}
+    >
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <Card style={[{ borderRadius: 20, backgroundColor: '#fff' }, shadowStyle]}>
+          <View style={{ alignItems: 'center', padding: spacing.sm }}>
+            <View style={{ backgroundColor: '#fef3c7', borderRadius: 100, padding: spacing.xs }}>
+              <Image source={{ uri: imageUrl }} style={{ width: cardImageSize, height: cardImageSize }} resizeMode="contain" />
+            </View>
+            <Text style={{ fontSize: 14, fontWeight: '600', marginTop: spacing.sm, textTransform: 'capitalize' }}>
+              {pokemon.name}
+            </Text>
+            <Text style={{ color: '#9ca3af', marginTop: spacing.xs, fontSize: 12 }}>#{id}</Text>
+          </View>
+        </Card>
+      </Animated.View>
+    </Pressable>
   );
-};
+});
