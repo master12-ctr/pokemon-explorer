@@ -2,7 +2,8 @@ import * as Haptics from 'expo-haptics';
 import React, { memo, useEffect, useRef } from 'react';
 import { Animated, Image, Platform, Pressable, Text, TouchableNativeFeedback, View } from 'react-native';
 import { Card } from 'react-native-paper';
-import { colors } from '../constants/colors';
+import { colors, spacing } from '../constants/colors';
+import { typography } from '../constants/typography';
 import { PokemonListItem } from '../types/pokemon';
 
 interface Props {
@@ -13,7 +14,7 @@ interface Props {
 
 const Wrapper = Platform.OS === 'android' ? TouchableNativeFeedback : Pressable;
 
-// Base64 fallback image
+// Base64 fallback image (simple grey circle with question mark)
 const FALLBACK_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABESURBVHgB7c6xDYAwDAXR60dgBToaoAQGwPxQASV7CToaoIQM8SXrSZZlWZZlWZZlWZZlWZZlWZZlWZZlWZZlWZZl/S8xAwAA//8DAIprB+I3p8rPAAAAAElFTkSuQmCC';
 
 export const PokemonCard: React.FC<Props> = memo(({ pokemon, onPress, screenWidth }) => {
@@ -52,9 +53,8 @@ export const PokemonCard: React.FC<Props> = memo(({ pokemon, onPress, screenWidt
     >
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
         <Card style={[{ borderRadius: 20, backgroundColor: colors.card }, colors.elevation.low]}>
-          {/* ✅ NativeWind classes used below */}
-          <View className="items-center p-2">
-            <View className="bg-amber-50 rounded-full p-1">
+          <View style={{ alignItems: 'center', padding: spacing.sm }}>
+            <View style={{ backgroundColor: '#fef3c7', borderRadius: 100, padding: spacing.xs }}>
               <Animated.Image
                 source={{ uri: imageUrl }}
                 defaultSource={{ uri: FALLBACK_IMAGE }}
@@ -63,8 +63,8 @@ export const PokemonCard: React.FC<Props> = memo(({ pokemon, onPress, screenWidt
                 resizeMode="contain"
               />
             </View>
-            <Text className="font-semibold text-base capitalize mt-1 text-gray-900">{pokemon.name}</Text>
-            <Text className="text-xs text-gray-500">#{id}</Text>
+            <Text style={typography.cardTitle}>{pokemon.name}</Text>
+            <Text style={typography.caption}>#{id}</Text>
           </View>
         </Card>
       </Animated.View>

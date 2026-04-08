@@ -4,16 +4,16 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    Animated,
-    Image,
-    Platform,
-    ScrollView,
-    Share,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  Image,
+  Platform,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Chip, FAB, IconButton, SegmentedButtons } from 'react-native-paper';
@@ -213,6 +213,14 @@ export default function DetailScreen() {
                       { value: 'rings', label: 'Rings' },
                     ]}
                     style={{ marginBottom: spacing.md }}
+                    theme={{
+        colors: {
+          primary: headerColor,          
+      onSurface: '#888',             
+      surface: 'transparent',      
+      onSurfaceVariant: '#888',                   
+        },
+      }}
                   />
 
                   <Animated.View
