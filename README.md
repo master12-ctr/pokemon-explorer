@@ -1,6 +1,6 @@
 # Pokémon Explorer
 
-A modern Pokémon mobile application built with Expo and React Native, showcasing API integration, state management, and clean UI design.
+A Pokémon mobile application built with Expo and React Native, showcasing API integration, state management, and clean UI design.
 
 ---
 
@@ -11,10 +11,26 @@ A modern Pokémon mobile application built with Expo and React Native, showcasin
 - Detailed Pokémon screen (stats, types, abilities, evolution chain)
 - Favorites with local persistence (AsyncStorage)
 - Pull-to-refresh support
-- Loading and error states (skeleton loaders + error boundary)
+- Loading and error states (skeleton loaders)
 - Smooth animations and responsive UI
-- **Performance optimizations**: FlatList optimizations, image prefetching, request deduplication, caching with TTL
-- **Unit tests**: Basic store tests (Jest)
+- **Basic Performance optimizations**:
+  - FlatList optimizations for smoother scrolling
+  - Image prefetching for better UX
+  - Simple caching for frequently used data
+- **Unit tests**:
+  - Store logic (favorites, fetching, caching)
+  - Component tests (PokemonCard, ErrorView)
+
+---
+
+## ✅ Requirement Checklist
+
+- [x] Pokémon list screen  
+- [x] Pokémon detail screen  
+- [x] Data fetched from PokeAPI  
+- [x] Loading states  
+- [x] Error handling  
+- [x] Navigation between screens  
 
 ---
 
@@ -40,16 +56,16 @@ The app follows a modular and scalable structure:
 - **store/** – Global state (Zustand)
 - **services/** – API layer
 - **hooks/** – Custom logic (data fetching, navigation)
-- **utils/** – Helpers and parsers
+- **utils/** – Helpers
 
 ### State Management
 
 Zustand is used for:
 
 - Global Pokémon list
-- Cached Pokémon details (5‑minute TTL)
-- Favorites persistence (AsyncStorage)
-- API request deduplication (prevents duplicate network calls)
+- Cached Pokémon details for better performance
+- Favorites persistence with AsyncStorage
+- Reduced duplicate API requests where possible
 
 ---
 
@@ -57,9 +73,15 @@ Zustand is used for:
 
 Data is fetched from the public **PokeAPI**:
 
-- Pokémon list
-- Pokémon details
-- Species and evolution chain
+- Pokémon list  
+- Pokémon details  
+- Species and evolution chain  
+
+---
+
+## 🔐 Environment
+
+No API key required (PokeAPI is public).
 
 ---
 
@@ -94,16 +116,13 @@ Run unit tests
 ```bash
 npm test
 ```
+Basic unit tests include:
 
-## 🧪 Future Improvements
+Store logic (favorites and data handling)
+A few component-level tests
 
-* Add unit tests (Jest / React Native Testing Library)
-* Dark mode support
-* Offline caching
-* Performance optimizations for large datasets
+## 📝 Notes
+
+This project includes additional features beyond the minimum requirements to explore React Native capabilities and improve user experience.
 
 ---
-
-## 📄 License
-
-MIT

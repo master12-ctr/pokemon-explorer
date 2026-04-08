@@ -1,11 +1,9 @@
-// Mock native modules that cause issues in Jest
-jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock');
-  Reanimated.default.call = () => {};
-  return Reanimated;
-});
-
-// Mock AsyncStorage
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+// Fix reanimated
+jest.mock('react-native-reanimated', () =>
+  require('react-native-reanimated/mock')
 );
+
+// Fix gesture handler
+jest.mock('react-native-gesture-handler', () => {
+  return {};
+});
