@@ -1,10 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import {
-    fetchEvolutionChain,
-    fetchPokemonDetails,
-    fetchPokemonList,
-    fetchPokemonSpecies
+  fetchEvolutionChain,
+  fetchPokemonDetails,
+  fetchPokemonList,
+  fetchPokemonSpecies
 } from '../services/pokeApi';
 import { EvolutionChain, Pokemon, PokemonListItem, PokemonSpecies } from '../types/pokemon';
 
@@ -103,11 +103,11 @@ export const usePokemonStore = create<PokemonStore>((set, get) => ({
 
   
   
+ 
   getPokemonDetails: async (name: string) => {
   const { pokemonsDetails } = get();
   if (pokemonsDetails[name]) return pokemonsDetails[name];
 
-  //  Check pending request FIRST
   if (pendingRequests[name]) return pendingRequests[name];
 
   const promise = (async () => {
@@ -116,17 +116,24 @@ export const usePokemonStore = create<PokemonStore>((set, get) => ({
     }));
     try {
       const details = await fetchPokemonDetails(name);
-      set((state) => ({
-        pokemonsDetails: { ...state.pokemonsDetails, [name]: details },
-        loadingDetails: { ...state.loadingDetails, [name]: false },
-        errorDetails: { ...state.errorDetails, [name]: undefined },
-      }));
+      set((state) => {
+        // Remove error entry for this Pokémon if it exists
+        const { [name]: _, ...restErrorDetails } = state.errorDetails;
+        return {
+          pokemonsDetails: { ...state.pokemonsDetails, [name]: details },
+          loadingDetails: { ...state.loadingDetails, [name]: false },
+          errorDetails: restErrorDetails,
+        };
+      });
       delete pendingRequests[name];
       return details;
     } catch (error: any) {
       set((state) => ({
         loadingDetails: { ...state.loadingDetails, [name]: false },
-        errorDetails: { ...state.errorDetails, [name]: error?.message || `Failed to load ${name}` },
+        errorDetails: {
+          ...state.errorDetails,
+          [name]: error?.message || `Failed to load ${name}`,
+        },
       }));
       delete pendingRequests[name];
       return null;
