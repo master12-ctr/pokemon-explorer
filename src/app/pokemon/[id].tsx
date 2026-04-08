@@ -1,16 +1,17 @@
+import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+    Alert,
     Animated,
     Image,
-    Modal,
+    Platform,
     ScrollView,
     Share,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
@@ -19,7 +20,6 @@ import { Chip, FAB, IconButton, SegmentedButtons } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
-import { CompareRadar } from '../../components/CompareRadar';
 import { ErrorView } from '../../components/ErrorView';
 import { PokeballLoader } from '../../components/PokeballLoader';
 import { RadarChart } from '../../components/RadarChart';
@@ -30,10 +30,10 @@ import { typography } from '../../constants/typography';
 import { usePokemonDetail } from '../../hooks/usePokemonDetail';
 import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
 import { usePokemonStore } from '../../store/pokemonStore';
-import { getPokemonIdByName, getPokemonImageUrl } from '../../utils/imageResolver';
+import { getPokemonImageUrl } from '../../utils/imageResolver';
 
 const FAB_SPACING = 64;
-type StatsViewMode = 'radar' | 'rings' | 'compare';
+type StatsViewMode = 'radar' | 'rings';
 
 export default function DetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -41,31 +41,37 @@ export default function DetailScreen() {
   const { addFavorite, removeFavorite, isFavorite, pokemons, getPokemonDetails } = usePokemonStore();
   const [activeTab, setActiveTab] = useState(0);
   const [statsViewMode, setStatsViewMode] = useState<StatsViewMode>('radar');
-  const [comparePokemon, setComparePokemon] = useState<any>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [searchCompare, setSearchCompare] = useState('');
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
   const imageOpacity = useRef(new Animated.Value(0)).current;
   const radarAnim = useRef(new Animated.Value(0)).current;
 
+  // Dynamic ID resolver from loaded pokemons list
+  const getPokemonIdFromName = useCallback((name: string): number => {
+    const found = pokemons.find(p => p.name === name);
+    if (found) {
+      const parts = found.url.split('/').filter(Boolean);
+      return parseInt(parts.pop() || '1', 10);
+    }
+    return 1;
+  }, [pokemons]);
+
   // Prefetch evolution images
   useEffect(() => {
     if (evolutions.length) {
       evolutions.forEach(evo => {
-        const evoId = getPokemonIdByName(evo);
+        const evoId = getPokemonIdFromName(evo);
         const evoUrl = getPokemonImageUrl(evoId);
         Image.prefetch(evoUrl);
       });
     }
-  }, [evolutions]);
+  }, [evolutions, getPokemonIdFromName]);
 
   useEffect(() => {
     Animated.timing(imageOpacity, { toValue: 1, duration: 400, useNativeDriver: true }).start();
   }, []);
 
-  // Animate radar chart when Stats tab becomes active
   useEffect(() => {
     if (activeTab === 1) {
       Animated.spring(radarAnim, {
@@ -83,6 +89,16 @@ export default function DetailScreen() {
   const { panGesture } = useSwipeNavigation(id, allPokemonNames);
   const setActiveTabMemo = useCallback((index: number) => setActiveTab(index), []);
 
+  // Preload adjacent Pokémon details – with fallback for deep links
+  const currentIndex = allPokemonNames.indexOf(id as string);
+  const nextName = currentIndex !== -1 ? allPokemonNames[currentIndex + 1] : null;
+  const prevName = currentIndex !== -1 ? allPokemonNames[currentIndex - 1] : null;
+
+  useEffect(() => {
+    if (nextName) getPokemonDetails(nextName);
+    if (prevName) getPokemonDetails(prevName);
+  }, [nextName, prevName, getPokemonDetails]);
+
   const animateHeart = () => {
     Animated.sequence([
       Animated.timing(heartScale, { toValue: 1.3, duration: 100, useNativeDriver: true }),
@@ -98,30 +114,20 @@ export default function DetailScreen() {
     else addFavorite(pokemon.name);
   }, [pokemon, isFavorite, addFavorite, removeFavorite]);
 
+  // Share with clipboard fallback for web
   const sharePokemon = useCallback(async () => {
-    if (pokemon) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await Share.share({ message: `Check out ${pokemon.name} #${pokemon.id} on Pokédex!` });
+    if (!pokemon) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    const message = `Check out ${pokemon.name} #${pokemon.id} on Pokédex!`;
+    
+    if (Platform.OS === 'web') {
+      await Clipboard.setStringAsync(message);
+      Alert.alert('Copied!', 'Pokémon info copied to clipboard');
+    } else {
+      await Share.share({ message });
     }
   }, [pokemon]);
-
-  const openCompareModal = () => setModalVisible(true);
-
-  const selectComparePokemon = async (selectedName: string) => {
-    if (selectedName === pokemon?.name) return;
-    const details = await getPokemonDetails(selectedName);
-    if (details) {
-      setComparePokemon(details);
-      setStatsViewMode('compare');
-      setModalVisible(false);
-      setSearchCompare('');
-    }
-  };
-
-  const filteredPokemons = useMemo(() => {
-    if (!searchCompare) return pokemons;
-    return pokemons.filter(p => p.name.toLowerCase().includes(searchCompare.toLowerCase()));
-  }, [pokemons, searchCompare]);
 
   if (loading) return <PokeballLoader fullScreen />;
   if (error || !pokemon) return <ErrorView message={error || 'No data'} onRetry={() => router.back()} />;
@@ -131,7 +137,6 @@ export default function DetailScreen() {
   const mainType = pokemon.types[0].type.name;
   const headerColor = getTypeColor(mainType);
   const statsData = pokemon.stats.map(s => ({ name: s.stat.name, value: s.base_stat }));
-  const compareStatsData = comparePokemon?.stats.map((s:any) => ({ name: s.stat.name, value: s.base_stat })) || [];
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -144,7 +149,6 @@ export default function DetailScreen() {
             scrollEventThrottle={16}
             contentContainerStyle={{ paddingTop: spacing.md, paddingBottom: insets.bottom + 80 }}
           >
-            {/* Hero card */}
             <View style={styles.heroCard}>
               <Animated.Image
                 source={{ uri: mainImageUrl }}
@@ -183,7 +187,8 @@ export default function DetailScreen() {
               headerColor={headerColor}
               scrollY={scrollY}
               headerHeight={200}
-              stickyOffset={0}
+             
+              stickyOffset={insets.top + 80}
             />
 
             <View style={{ padding: spacing.lg }}>
@@ -206,15 +211,9 @@ export default function DetailScreen() {
                     buttons={[
                       { value: 'radar', label: 'Radar' },
                       { value: 'rings', label: 'Rings' },
-                 
                     ]}
                     style={{ marginBottom: spacing.md }}
                   />
-                  {!comparePokemon && statsViewMode === 'compare' && (
-                    <TouchableOpacity onPress={openCompareModal} style={styles.compareButton}>
-                      <Text style={{ color: colors.primary, fontWeight: '600' }}>+ Select Pokémon to compare</Text>
-                    </TouchableOpacity>
-                  )}
 
                   <Animated.View
                     style={{
@@ -224,14 +223,6 @@ export default function DetailScreen() {
                   >
                     {statsViewMode === 'radar' && <RadarChart stats={statsData} />}
                     {statsViewMode === 'rings' && <StatRings stats={statsData} maxStat={150} />}
-                    {statsViewMode === 'compare' && comparePokemon && (
-                      <CompareRadar
-                        pokemon1Stats={statsData}
-                        pokemon2Stats={compareStatsData}
-                        pokemon1Name={pokemon.name}
-                        pokemon2Name={comparePokemon.name}
-                      />
-                    )}
                   </Animated.View>
                 </>
               )}
@@ -250,7 +241,7 @@ export default function DetailScreen() {
               {activeTab === 3 && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {evolutions.map((evo) => {
-                    const evoId = getPokemonIdByName(evo);
+                    const evoId = getPokemonIdFromName(evo);
                     const evoImageUrl = getPokemonImageUrl(evoId);
                     return (
                       <TouchableOpacity
@@ -268,7 +259,6 @@ export default function DetailScreen() {
             </View>
           </Animated.ScrollView>
 
-          {/* FABs – now properly above content */}
           <FAB
             icon={favorite ? 'heart' : 'heart-outline'}
             onPress={toggleFavorite}
@@ -282,48 +272,6 @@ export default function DetailScreen() {
           />
         </SafeAreaView>
       </GestureDetector>
-
-      {/* Modal for compare selection (searchable) */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
-            <IconButton icon="arrow-left" onPress={() => setModalVisible(false)} />
-            <Text style={[typography.title, { flex: 1 }]}>Select Pokémon</Text>
-          </View>
-          <TextInput
-            placeholder="Search Pokémon..."
-            value={searchCompare}
-            onChangeText={setSearchCompare}
-            style={{
-              margin: spacing.md,
-              padding: spacing.md,
-              borderRadius: 24,
-              backgroundColor: colors.card,
-              fontSize: 16,
-            }}
-          />
-          <ScrollView>
-            {filteredPokemons.map(p => (
-              <TouchableOpacity
-                key={p.name}
-                onPress={() => selectComparePokemon(p.name)}
-                style={{ padding: spacing.md, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', flexDirection: 'row', alignItems: 'center' }}
-              >
-                <Image
-                  source={{ uri: getPokemonImageUrl(getPokemonIdByName(p.name)) }}
-                  style={{ width: 50, height: 50, marginRight: spacing.md }}
-                />
-                <Text style={typography.body}>{p.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
     </GestureHandlerRootView>
   );
 }
@@ -350,12 +298,5 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: 16,
     marginBottom: spacing.sm,
-  },
-  compareButton: {
-    backgroundColor: colors.backgroundElement,
-    padding: spacing.md,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginBottom: spacing.md,
   },
 });

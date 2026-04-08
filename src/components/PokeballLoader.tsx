@@ -11,20 +11,28 @@ export const PokeballLoader: React.FC<Props> = ({ size = 80, fullScreen = false 
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const rotateLoop = Animated.loop(
       Animated.timing(rotateAnim, {
         toValue: 1,
         duration: 1500,
         easing: Easing.linear,
         useNativeDriver: true,
       })
-    ).start();
-    Animated.loop(
+    );
+    const scaleLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(scaleAnim, { toValue: 1.1, duration: 500, useNativeDriver: true }),
         Animated.timing(scaleAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
       ])
-    ).start();
+    );
+
+    rotateLoop.start();
+    scaleLoop.start();
+
+    return () => {
+      rotateLoop.stop();
+      scaleLoop.stop();
+    };
   }, []);
 
   const spin = rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });

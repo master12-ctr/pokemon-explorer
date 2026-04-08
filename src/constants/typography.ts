@@ -1,5 +1,5 @@
-import { colors } from './colors';
-import { spacing } from './spacing';
+import { colors, spacing } from './colors';
+
 
 export const typography = {
   title: { fontSize: 24, fontWeight: '700' as const, color: colors.text.primary },

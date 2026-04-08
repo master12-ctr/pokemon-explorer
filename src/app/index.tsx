@@ -24,17 +24,32 @@ import { getLayout } from '../constants/spacing';
 import { typography } from '../constants/typography';
 import { usePokemonStore } from '../store/pokemonStore';
 
+const CARD_HEIGHT = 220; // approximate height per row
+
 export default function HomeScreen() {
   const { width, height } = useWindowDimensions();
   const { numColumns, gap, screenWidth } = getLayout(width, height);
-  const { pokemons, loading, error, fetchPokemons, loadMore, hasMore } = usePokemonStore();
+  const { pokemons, loadingInitial, loadingMore, error, fetchPokemons, loadMore, hasMore } = usePokemonStore();
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const insets = useSafeAreaInsets();
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
 
-  // Prefetch first 20 images (only on native)
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchQuery(searchInput), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Only fetch if list is empty
+  useEffect(() => {
+    if (pokemons.length === 0 && !loadingInitial) {
+      fetchPokemons(false);
+    }
+  }, [pokemons.length, loadingInitial, fetchPokemons]);
+
+  // Prefetch first 20 images
   useEffect(() => {
     if (Platform.OS !== 'web' && pokemons.length) {
       pokemons.slice(0, 20).forEach(p => {
@@ -44,10 +59,6 @@ export default function HomeScreen() {
       });
     }
   }, [pokemons]);
-
-  useEffect(() => {
-    fetchPokemons();
-  }, [fetchPokemons]);
 
   const filteredPokemons = useMemo(() => {
     if (!searchQuery) return pokemons;
@@ -59,14 +70,13 @@ export default function HomeScreen() {
     router.push(`/pokemon/${name}`);
   }, []);
 
-  const handleRefresh = useCallback(() => fetchPokemons(), [fetchPokemons]);
+  const handleRefresh = useCallback(() => fetchPokemons(true), [fetchPokemons]);
 
-  const handleLoadMore = useCallback(async () => {
-    if (loading || isFetchingMore || !hasMore) return;
-    setIsFetchingMore(true);
-    await loadMore();
-    setIsFetchingMore(false);
-  }, [loading, isFetchingMore, hasMore, loadMore]);
+  const handleLoadMore = useCallback(() => {
+    if (!loadingMore && hasMore && !loadingInitial) {
+      loadMore();
+    }
+  }, [loadingMore, hasMore, loadingInitial, loadMore]);
 
   const scrollToTop = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -80,32 +90,44 @@ export default function HomeScreen() {
     </View>
   );
 
-  // Collapsible header animation
+  // 
+const getItemLayout = useCallback(
+  (_: any, index: number) => {
+    const row = Math.floor(index / numColumns);
+    // Use a generous fixed height that accommodates most cards
+    const estimatedRowHeight = 230;
+    return {
+      length: estimatedRowHeight,
+      offset: estimatedRowHeight * row,
+      index,
+    };
+  },
+  [numColumns]
+);
+
+  // Header animations (unchanged)
   const headerHeight = scrollY.interpolate({
     inputRange: [0, 120],
     outputRange: [130, 80],
     extrapolate: 'clamp',
   });
-
   const titleOpacity = scrollY.interpolate({
     inputRange: [0, 60, 120],
     outputRange: [1, 0.5, 0],
     extrapolate: 'clamp',
   });
-
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 150],
     outputRange: [1, 0.96],
     extrapolate: 'clamp',
   });
-
   const showScrollToTop = scrollY.interpolate({
     inputRange: [0, 200],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
 
-  if (loading && pokemons.length === 0) {
+  if (loadingInitial && pokemons.length === 0) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <FlatList
@@ -119,13 +141,11 @@ export default function HomeScreen() {
       </SafeAreaView>
     );
   }
-  if (error && pokemons.length === 0) return <ErrorView message={error} onRetry={fetchPokemons} />;
+  if (error && pokemons.length === 0) return <ErrorView message={error} onRetry={() => fetchPokemons(true)} />;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style="light" backgroundColor={colors.primary} />
-
-      {/* Animated Header */}
       <Animated.View
         style={{
           backgroundColor: colors.primary,
@@ -141,48 +161,18 @@ export default function HomeScreen() {
           opacity: headerOpacity,
         }}
       >
-        {/* Row with title and favorites icon */}
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: spacing.sm,
-          }}
-        >
-          <Animated.Text
-            style={[
-              typography.titleWhite,
-              {
-                fontSize: 22,
-                opacity: titleOpacity,
-                letterSpacing: 0.5,
-              },
-            ]}
-          >
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
+          <Animated.Text style={[typography.titleWhite, { fontSize: 22, opacity: titleOpacity, letterSpacing: 0.5 }]}>
             Pokédex
           </Animated.Text>
-          <IconButton
-            icon="heart"
-            iconColor="#fff"
-            size={24}
-            onPress={() => router.push('/favorites')}
-            style={{ margin: 0 }}
-          />
+          <IconButton icon="heart" iconColor="#fff" size={24} onPress={() => router.push('/favorites')} style={{ margin: 0 }} />
         </View>
-
-        {/* Search bar (always visible) */}
         <View style={{ paddingBottom: spacing.sm }}>
           <Searchbar
             placeholder="Search Pokémon"
-            onChangeText={setSearchQuery}
-            value={searchQuery}
-            style={{
-              borderRadius: 28,
-              backgroundColor: colors.card,
-              elevation: 2,
-              height: 48,
-            }}
+            onChangeText={setSearchInput}
+            value={searchInput}
+            style={{ borderRadius: 28, backgroundColor: colors.card, elevation: 2, height: 48 }}
             inputStyle={{ fontSize: 14 }}
             iconColor={colors.primary}
           />
@@ -192,21 +182,14 @@ export default function HomeScreen() {
       <FlatList
         ref={flatListRef}
         data={filteredPokemons}
-        keyExtractor={item => item.name}
+        keyExtractor={item => item.url} // ✅ more stable than name
         numColumns={numColumns}
-        renderItem={({ item }) => (
-          <PokemonCard pokemon={item} onPress={handlePress} screenWidth={screenWidth} />
-        )}
+        renderItem={({ item }) => <PokemonCard pokemon={item} onPress={handlePress} screenWidth={screenWidth} />}
         columnWrapperStyle={{ gap }}
-        contentContainerStyle={{
-          paddingTop: spacing.sm,
-          paddingHorizontal: spacing.md,
-          paddingBottom: spacing.xl + insets.bottom,
-          gap,
-        }}
+        contentContainerStyle={{ paddingTop: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.xl + insets.bottom, gap }}
         ListEmptyComponent={renderEmptyList}
         ListFooterComponent={() => {
-          if (isFetchingMore) {
+          if (loadingMore) {
             return (
               <View style={{ alignItems: 'center', marginTop: spacing.lg }}>
                 <PokeballLoader size={40} />
@@ -222,18 +205,8 @@ export default function HomeScreen() {
           }
           return null;
         }}
-        refreshControl={
-          <RefreshControl
-            refreshing={loading}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
+        refreshControl={<RefreshControl refreshing={loadingInitial} onRefresh={handleRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         scrollEventThrottle={16}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.3}
@@ -242,32 +215,19 @@ export default function HomeScreen() {
         maxToRenderPerBatch={10}
         windowSize={7}
         removeClippedSubviews={Platform.OS === 'android'}
+        getItemLayout={getItemLayout}
       />
 
-      {/* Scroll to Top FAB (only appears when scrolled down) */}
       <Animated.View
         style={{
           position: 'absolute',
           right: 16,
           bottom: 16 + insets.bottom,
           opacity: showScrollToTop,
-          transform: [
-            {
-              scale: showScrollToTop.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.8, 1],
-              }),
-            },
-          ],
+          transform: [{ scale: showScrollToTop.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }],
         }}
       >
-        <FAB
-          icon="arrow-up"
-          onPress={scrollToTop}
-          style={{ backgroundColor: colors.card, elevation: 4 }}
-          color={colors.primary}
-          size="small"
-        />
+        <FAB icon="arrow-up" onPress={scrollToTop} style={{ backgroundColor: colors.card, elevation: 4 }} color={colors.primary} size="small" />
       </Animated.View>
     </SafeAreaView>
   );

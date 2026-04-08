@@ -1,80 +1,109 @@
 # Pokémon Explorer
 
-A beautifully designed Pokémon mobile app built with Expo, TypeScript, React Native Paper, NativeWind, and Zustand.
-
-## Features
-
-- ✅ Pokémon list with infinite scroll
-- ✅ Search by name (debounced)
-- ✅ Detail screen with stats, types, abilities, height, weight
-- ✅ Favorites (persisted locally with AsyncStorage)
-- ✅ Pull‑to‑refresh
-- ✅ Loading & error states
-- ✅ Clean, modern UI with shadows and gradients
-
-## Tech Stack
-
-- **Expo SDK 55**
-- **React Native 0.83**
-- **TypeScript**
-- **Zustand** (state management + persistence)
-- **React Native Paper** (UI components)
-- **NativeWind v5** (Tailwind CSS for React Native)
-- **Axios** (API calls)
-- **PokeAPI**
-
-## Setup Instructions
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/pokemon-explorer.git
-   cd pokemon-explorer
-   Install dependencies:
-
-bash
-npm install
-Start the development server:
-
-bash
-npx expo start
-Scan the QR code with Expo Go (Android) or the Camera app (iOS).
-
-Screenshots
-Add your own screenshots here before submitting.
-
-Project Structure
-text
-src/
-├── components/       # Reusable UI (Card, SearchBar, Loading, Error)
-├── store/            # Zustand store (Pokémon, favorites)
-├── services/         # API calls (PokeAPI)
-├── types/            # TypeScript interfaces
-app/
-├── _layout.tsx       # Root layout with PaperProvider & Stack nav
-├── index.tsx         # List screen
-└── pokemon/[id].tsx  # Detail screen
-Future Improvements
-Dark mode toggle
-
-Unit tests with Jest
-
-Offline support
-
-License
-MIT
-
-text
+A modern Pokémon mobile application built with Expo and React Native, showcasing API integration, state management, and clean UI design.
 
 ---
 
-## 🚀 Final Steps
+## ✨ Features
 
-1. **Replace each file** with the code above.
-2. **Install missing dependencies** (if any):
-   ```bash
-   npm install zustand @react-native-async-storage/async-storage axios
-Clear Metro cache and restart:
+- Pokémon list with infinite scroll
+- Search by name (debounced)
+- Detailed Pokémon screen (stats, types, abilities, evolution chain)
+- Favorites with local persistence (AsyncStorage)
+- Pull-to-refresh support
+- Loading and error states (skeleton loaders + error boundary)
+- Smooth animations and responsive UI
+- **Performance optimizations**: FlatList optimizations, image prefetching, request deduplication, caching with TTL
+- **Unit tests**: Basic store tests (Jest)
 
-bash
-npx expo start -c
-Test on a real device (Expo Go).
+---
+
+## 🛠 Tech Stack
+
+- **Expo (SDK 55)**
+- **React Native (0.83)**
+- **TypeScript**
+- **Zustand** – state management
+- **React Native Paper** – UI components
+- **NativeWind** – utility-first styling
+- **Axios** – API requests
+- **PokeAPI** – data source
+
+---
+
+## 🧱 Architecture Overview
+
+The app follows a modular and scalable structure:
+
+- **app/** – Screens (Expo Router)
+- **components/** – Reusable UI components
+- **store/** – Global state (Zustand)
+- **services/** – API layer
+- **hooks/** – Custom logic (data fetching, navigation)
+- **utils/** – Helpers and parsers
+
+### State Management
+
+Zustand is used for:
+
+- Global Pokémon list
+- Cached Pokémon details (5‑minute TTL)
+- Favorites persistence (AsyncStorage)
+- API request deduplication (prevents duplicate network calls)
+
+---
+
+## 🔌 API
+
+Data is fetched from the public **PokeAPI**:
+
+- Pokémon list
+- Pokémon details
+- Species and evolution chain
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/pokemon-explorer.git
+cd pokemon-explorer
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Start the app
+
+```bash
+npx expo start
+```
+
+Scan the QR code using Expo Go (Android) or the Camera app (iOS).
+
+---
+
+## 📱 Tests
+Run unit tests
+
+```bash
+npm test
+```
+
+## 🧪 Future Improvements
+
+* Add unit tests (Jest / React Native Testing Library)
+* Dark mode support
+* Offline caching
+* Performance optimizations for large datasets
+
+---
+
+## 📄 License
+
+MIT

@@ -1,8 +1,16 @@
 import { Stack } from 'expo-router';
+import { useEffect } from 'react';
 import { PaperProvider } from 'react-native-paper';
 import '../global.css';
+import { usePokemonStore } from '../store/pokemonStore';
 
 export default function RootLayout() {
+  const hydrateFavorites = usePokemonStore(state => state.hydrateFavorites);
+
+  useEffect(() => {
+    hydrateFavorites();
+  }, [hydrateFavorites]);
+
   return (
     <PaperProvider>
       <Stack
@@ -13,7 +21,6 @@ export default function RootLayout() {
           headerTitleAlign: 'center',
         }}
       >
-        {/* Hide the default header on home screen – we use our own custom header */}
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="pokemon/[id]" options={{ title: 'Details' }} />
         <Stack.Screen name="favorites" options={{ title: 'Favorites', headerShown: true }} />

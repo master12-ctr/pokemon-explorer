@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, DimensionValue, View } from 'react-native';
 import { spacing } from '../constants/spacing';
 
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface SkeletonProps {
@@ -14,12 +15,14 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({ height = 100, width = 
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(shimmerAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
         Animated.timing(shimmerAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
       ])
-    ).start();
+    );
+    loop.start();
+    return () => loop.stop();
   }, []);
 
   const translateX = shimmerAnim.interpolate({

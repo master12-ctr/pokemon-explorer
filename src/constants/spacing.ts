@@ -1,14 +1,5 @@
-
 export const spacing = {
   xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48,
-};
-
-export const shadowStyle = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.06,
-  shadowRadius: 4,
-  elevation: 2,
 };
 
 export const getLayout = (width: number, height: number) => {

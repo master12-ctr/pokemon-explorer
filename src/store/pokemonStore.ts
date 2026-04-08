@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import {
     fetchEvolutionChain,
@@ -13,21 +14,30 @@ interface PokemonStore {
   pokemonsSpecies: Record<string, PokemonSpecies>;
   evolutionChains: Record<string, EvolutionChain>;
   favorites: string[];
-  loading: boolean;
+  loadingInitial: boolean;
+  loadingMore: boolean;
+  loadingDetails: Record<string, boolean>;
   error: string | null;
+  errorDetails: Record<string, string>;
   hasMore: boolean;
   offset: number;
-  fetchPokemons: () => Promise<void>;
+  fetchPokemons: (force?: boolean) => Promise<void>;
   loadMore: () => Promise<void>;
   getPokemonDetails: (name: string) => Promise<Pokemon | null>;
   getPokemonSpecies: (id: number) => Promise<PokemonSpecies | null>;
   getEvolutionChain: (url: string) => Promise<EvolutionChain | null>;
-  addFavorite: (name: string) => void;
-  removeFavorite: (name: string) => void;
+  addFavorite: (name: string) => Promise<void>;
+  removeFavorite: (name: string) => Promise<void>;
   isFavorite: (name: string) => boolean;
+  hydrateFavorites: () => Promise<void>;
 }
 
 const LIMIT = 20;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+let lastFetchTime = 0;
+
+// ✅ Promise cache to prevent duplicate requests
+const pendingRequests: Record<string, Promise<Pokemon | null> | undefined> = {};
 
 export const usePokemonStore = create<PokemonStore>((set, get) => ({
   pokemons: [],
@@ -35,65 +45,97 @@ export const usePokemonStore = create<PokemonStore>((set, get) => ({
   pokemonsSpecies: {},
   evolutionChains: {},
   favorites: [],
-  loading: false,
+  loadingInitial: false,
+  loadingMore: false,
+  loadingDetails: {},
   error: null,
+  errorDetails: {},
   hasMore: true,
   offset: 0,
 
-  fetchPokemons: async () => {
-    const { offset, pokemons } = get();
-    if (offset > 0 && pokemons.length > 0) {
-      console.log('Already loaded, skipping fetch');
-      return;
-    }
-    set({ loading: true, error: null });
+  hydrateFavorites: async () => {
     try {
-      console.log('Fetching first page of Pokémon...');
+      const stored = await AsyncStorage.getItem('favorites');
+      if (stored) {
+        set({ favorites: JSON.parse(stored) });
+      }
+    } catch (e) {
+      console.warn('Failed to load favorites', e);
+    }
+  },
+
+  fetchPokemons: async (force = false) => {
+    const { offset, pokemons, loadingInitial } = get();
+    const now = Date.now();
+    if (!force && offset > 0 && pokemons.length > 0 && (now - lastFetchTime) < CACHE_TTL) return;
+    if (loadingInitial) return;
+    set({ loadingInitial: true, error: null });
+    try {
       const results = await fetchPokemonList(LIMIT, 0);
-      console.log(`Fetched ${results.length} Pokémon`);
+      lastFetchTime = Date.now();
       set({
         pokemons: results,
         offset: LIMIT,
         hasMore: results.length === LIMIT,
-        loading: false,
+        loadingInitial: false,
       });
     } catch (error: any) {
-      console.error('API error:', error.message);
-      set({ error: error instanceof Error ? error.message : 'Failed to load Pokémon', loading: false });
+      set({ error: error?.message || 'Failed to load Pokémon', loadingInitial: false });
     }
   },
 
   loadMore: async () => {
-    const { loading, hasMore, offset, pokemons } = get();
-    if (loading || !hasMore) return;
-    set({ loading: true });
+    const { loadingMore, hasMore, offset, pokemons } = get();
+    if (loadingMore || !hasMore) return;
+    set({ loadingMore: true });
     try {
       const results = await fetchPokemonList(LIMIT, offset);
       set({
         pokemons: [...pokemons, ...results],
         offset: offset + LIMIT,
         hasMore: results.length === LIMIT,
-        loading: false,
+        loadingMore: false,
       });
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Failed to load more', loading: false });
+      set({ error: (error as Error)?.message || 'Failed to load more', loadingMore: false });
     }
   },
 
+  
+  
   getPokemonDetails: async (name: string) => {
-    const { pokemonsDetails } = get();
-    if (pokemonsDetails[name]) return pokemonsDetails[name];
+  const { pokemonsDetails } = get();
+  if (pokemonsDetails[name]) return pokemonsDetails[name];
+
+  //  Check pending request FIRST
+  if (pendingRequests[name]) return pendingRequests[name];
+
+  const promise = (async () => {
+    set((state) => ({
+      loadingDetails: { ...state.loadingDetails, [name]: true },
+    }));
     try {
       const details = await fetchPokemonDetails(name);
       set((state) => ({
-        pokemonsDetails: { ...state.pokemonsDetails, [name]: details }
+        pokemonsDetails: { ...state.pokemonsDetails, [name]: details },
+        loadingDetails: { ...state.loadingDetails, [name]: false },
+        errorDetails: { ...state.errorDetails, [name]: undefined },
       }));
+      delete pendingRequests[name];
       return details;
-    } catch (error) {
-      set({ error: `Failed to load details for ${name}` });
+    } catch (error: any) {
+      set((state) => ({
+        loadingDetails: { ...state.loadingDetails, [name]: false },
+        errorDetails: { ...state.errorDetails, [name]: error?.message || `Failed to load ${name}` },
+      }));
+      delete pendingRequests[name];
       return null;
     }
-  },
+  })();
+
+  pendingRequests[name] = promise;
+  return promise;
+},
 
   getPokemonSpecies: async (id: number) => {
     const { pokemonsSpecies } = get();
@@ -124,12 +166,24 @@ export const usePokemonStore = create<PokemonStore>((set, get) => ({
     }
   },
 
-  // Prevent duplicate favorites
-  addFavorite: (name) =>
-    set((state) => ({
-      favorites: state.favorites.includes(name) ? state.favorites : [...state.favorites, name],
-    })),
-  removeFavorite: (name) =>
-    set((state) => ({ favorites: state.favorites.filter((fav) => fav !== name) })),
+  addFavorite: async (name) => {
+    const { favorites } = get();
+    if (favorites.includes(name)) return;
+    const updated = [...favorites, name];
+    set({ favorites: updated });
+    await AsyncStorage.setItem('favorites', JSON.stringify(updated));
+    // Pre-fetch details if not already cached
+    const { getPokemonDetails } = get();
+    if (!get().pokemonsDetails[name]) {
+      getPokemonDetails(name);
+    }
+  },
+
+  removeFavorite: async (name) => {
+    const updated = get().favorites.filter(f => f !== name);
+    set({ favorites: updated });
+    await AsyncStorage.setItem('favorites', JSON.stringify(updated));
+  },
+
   isFavorite: (name) => get().favorites.includes(name),
 }));

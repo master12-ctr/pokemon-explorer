@@ -1,9 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
     FlatList,
     RefreshControl,
     Text,
@@ -14,33 +13,49 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ErrorView } from '../components/ErrorView';
 import { PokemonCard } from '../components/PokemonCard';
+import { SkeletonCard } from '../components/SkeletonLoader';
 import { colors, spacing } from '../constants/colors';
 import { getLayout } from '../constants/spacing';
 import { typography } from '../constants/typography';
 import { usePokemonStore } from '../store/pokemonStore';
+import { PokemonListItem } from '../types/pokemon';
 
 export default function FavoritesScreen() {
-  const { favorites, fetchPokemons, pokemons, loading, error } = usePokemonStore();
+  const { favorites, pokemonsDetails, getPokemonDetails, loadingInitial, error, errorDetails } = usePokemonStore();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMissing, setLoadingMissing] = useState(false);
   const { width } = useWindowDimensions();
-  const { numColumns, gap, screenWidth } = getLayout(width, 0); // height not needed
+  const { numColumns, gap, screenWidth } = getLayout(width, 0);
 
-  // Filter only favorited Pokémon from the loaded list
-  const favoritePokemons = pokemons.filter(p => favorites.includes(p.name));
+  // Derive favoritePokemons directly from store (no local state)
+  const favoritePokemons = useMemo(() => {
+    return favorites
+      .map(name => {
+        const details = pokemonsDetails[name];
+        if (!details) return null;
+        return { name, url: `https://pokeapi.co/api/v2/pokemon/${details.id}/` };
+      })
+      .filter(Boolean) as PokemonListItem[];
+  }, [favorites, pokemonsDetails]);
 
-  // If no pokemons loaded yet, fetch them (needed to show details)
+  // Auto-fetch missing favorites details
   useEffect(() => {
-    if (pokemons.length === 0 && !loading) {
-      fetchPokemons();
-    }
-  }, []);
+    const missing = favorites.filter(name => !pokemonsDetails[name] && !errorDetails[name]);
+    if (missing.length === 0) return;
+    const fetchMissing = async () => {
+      setLoadingMissing(true);
+      await Promise.all(missing.map(name => getPokemonDetails(name)));
+      setLoadingMissing(false);
+    };
+    fetchMissing();
+  }, [favorites, pokemonsDetails, errorDetails, getPokemonDetails]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchPokemons();
+    await Promise.all(favorites.map(name => getPokemonDetails(name)));
     setRefreshing(false);
-  }, [fetchPokemons]);
+  }, [favorites, getPokemonDetails]);
 
   const handlePress = useCallback((name: string) => {
     Haptics.selectionAsync();
@@ -54,50 +69,43 @@ export default function FavoritesScreen() {
     </View>
   );
 
-  if (loading && pokemons.length === 0) {
+  const renderItem = ({ item }: { item: PokemonListItem }) => (
+    // ✅ Removed outer margin – gap handles spacing
+    <View style={{ flex: 1 }}>
+      <PokemonCard pokemon={item} onPress={handlePress} screenWidth={screenWidth} />
+    </View>
+  );
+
+  const isLoading = (loadingInitial || loadingMissing) && favoritePokemons.length === 0;
+
+  if (isLoading) {
     return (
-      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <FlatList
+          data={[1, 2, 3, 4]}
+          keyExtractor={(i) => i.toString()}
+          numColumns={numColumns}
+          renderItem={() => <SkeletonCard />}
+          contentContainerStyle={{ paddingHorizontal: spacing.md, gap }}
+          columnWrapperStyle={{ gap }}
+        />
       </SafeAreaView>
     );
   }
 
-  if (error && pokemons.length === 0) {
-    return <ErrorView message={error} onRetry={fetchPokemons} />;
+  if (error && favoritePokemons.length === 0) {
+    return <ErrorView message={error} onRetry={handleRefresh} />;
   }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style="light" backgroundColor={colors.primary} />
-
-      {/* Simple header */}
-      {/* <View
-        style={{
-          backgroundColor: colors.primary,
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.md,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Text style={[typography.titleWhite, { fontSize: 20 }]}>Favorites</Text>
-      </View> */}
-
       <FlatList
         data={favoritePokemons}
-        keyExtractor={(item) => item.name}
+        keyExtractor={(item) => item.url} // ✅ stable key
         numColumns={numColumns}
         columnWrapperStyle={{ gap }}
-        renderItem={({ item }) => (
-          <View style={{ flex: 1, margin: spacing.sm / 2 }}>
-            <PokemonCard
-              pokemon={item}
-              onPress={handlePress}
-              screenWidth={screenWidth}
-            />
-          </View>
-        )}
+        renderItem={renderItem}
         contentContainerStyle={{
           paddingHorizontal: spacing.md,
           paddingBottom: spacing.xl + insets.bottom,

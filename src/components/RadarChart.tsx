@@ -62,24 +62,24 @@ export const RadarChart: React.FC<Props> = ({ stats }) => {
         width={width - 40}
         height={320}
       >
-        {/* Concentric rings only – no labels inside */}
+        {/* Dependent axis (rings) with numeric values */}
         <VictoryPolarAxis
           dependentAxis
           tickValues={[0.2, 0.4, 0.6, 0.8, 1]}
-          tickFormat={() => ''} // remove numeric labels
+          tickFormat={(t) => `${Math.round(t * MAX_STAT)}`}
           style={{
             grid: { stroke: '#e5e7eb', strokeWidth: 0.8 },
             axis: { stroke: '#d1d5db' },
-            tickLabels: { fontSize: 0 }, // hide labels
+            tickLabels: { fontSize: 10, fill: '#6b7280' },
           }}
         />
 
-        {/* No stat name labels on the axes – hidden */}
+        {/* Category axis (stat names) – now VISIBLE */}
         <VictoryPolarAxis
           tickValues={processedData.labels}
           style={{
-            axis: { stroke: 'transparent' },
-            tickLabels: { fontSize: 0 }, // hide labels
+            axis: { stroke: '#d1d5db' },
+            tickLabels: { fontSize: 11, fill: '#374151', fontWeight: '500', padding: 6 },
           }}
         />
 
@@ -98,7 +98,7 @@ export const RadarChart: React.FC<Props> = ({ stats }) => {
         />
       </VictoryChart>
 
-      {/* Stat names and values displayed outside (clean) */}
+      {/* Extra legend (optional, keeps the numbers visible) */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 12 }}>
         {stats.map(stat => (
           <View key={stat.name} style={{ marginHorizontal: 8, marginVertical: 4, alignItems: 'center' }}>
