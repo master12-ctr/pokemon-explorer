@@ -14,6 +14,8 @@ export const useSwipeNavigation = (currentId: string, allPokemonNames: string[])
   }, [currentId, allPokemonNames]);
 
   const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])   
+    .failOffsetY([-10, 10])  
     .onEnd(event => {
       if (event.translationX > 50) goToPrev();
       else if (event.translationX < -50) goToNext();
