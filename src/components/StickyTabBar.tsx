@@ -23,10 +23,9 @@ export const StickyTabBar: React.FC<Props> = ({
 }) => {
   const { width } = useWindowDimensions();
 
-  // Pin when scrolled past the header
   const translateY = scrollY.interpolate({
     inputRange: [0, headerHeight - 50, headerHeight],
-    outputRange: [0, 0, 50], // slide down from top
+    outputRange: [0, 0, 50],
     extrapolate: 'clamp',
   });
 

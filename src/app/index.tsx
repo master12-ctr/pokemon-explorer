@@ -24,11 +24,9 @@ import { getLayout } from '../constants/spacing';
 import { typography } from '../constants/typography';
 import { usePokemonStore } from '../store/pokemonStore';
 
-const CARD_HEIGHT = 220; // approximate height per row
-
 export default function HomeScreen() {
   const { width, height } = useWindowDimensions();
-  const { numColumns, gap, screenWidth } = getLayout(width, height);
+  const { numColumns, gap, screenWidth, cardWidth } = getLayout(width, height);
   const { pokemons, loadingInitial, loadingMore, error, fetchPokemons, loadMore, hasMore } = usePokemonStore();
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,7 +40,7 @@ export default function HomeScreen() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Only fetch if list is empty
+  // Initial fetch if empty
   useEffect(() => {
     if (pokemons.length === 0 && !loadingInitial) {
       fetchPokemons(false);
@@ -71,11 +69,8 @@ export default function HomeScreen() {
   }, []);
 
   const handleRefresh = useCallback(() => fetchPokemons(true), [fetchPokemons]);
-
   const handleLoadMore = useCallback(() => {
-    if (!loadingMore && hasMore && !loadingInitial) {
-      loadMore();
-    }
+    if (!loadingMore && hasMore && !loadingInitial) loadMore();
   }, [loadingMore, hasMore, loadingInitial, loadMore]);
 
   const scrollToTop = useCallback(() => {
@@ -90,35 +85,24 @@ export default function HomeScreen() {
     </View>
   );
 
-  // 
-const getItemLayout = useCallback(
-  (_: any, index: number) => {
-    const row = Math.floor(index / numColumns);
-    // Use a generous fixed height that accommodates most cards
-    const estimatedRowHeight = 230;
-    return {
-      length: estimatedRowHeight,
-      offset: estimatedRowHeight * row,
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({
+      length: 230,
+      offset: 230 * Math.floor(index / numColumns),
       index,
-    };
-  },
-  [numColumns]
-);
+    }),
+    [numColumns]
+  );
 
-  // Header animations (unchanged)
+  // Header animation
   const headerHeight = scrollY.interpolate({
-    inputRange: [0, 120],
-    outputRange: [130, 80],
+    inputRange: [0, 100],
+    outputRange: [120, 70],
     extrapolate: 'clamp',
   });
   const titleOpacity = scrollY.interpolate({
-    inputRange: [0, 60, 120],
+    inputRange: [0, 50, 100],
     outputRange: [1, 0.5, 0],
-    extrapolate: 'clamp',
-  });
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 150],
-    outputRange: [1, 0.96],
     extrapolate: 'clamp',
   });
   const showScrollToTop = scrollY.interpolate({
@@ -130,6 +114,7 @@ const getItemLayout = useCallback(
   if (loadingInitial && pokemons.length === 0) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar style="light" backgroundColor={colors.primary} />
         <FlatList
           data={[1, 2, 3, 4, 5, 6]}
           keyExtractor={i => i.toString()}
@@ -141,13 +126,35 @@ const getItemLayout = useCallback(
       </SafeAreaView>
     );
   }
-  if (error && pokemons.length === 0) return <ErrorView message={error} onRetry={() => fetchPokemons(true)} />;
+
+  if (error && pokemons.length === 0) {
+    return <ErrorView message={error} onRetry={() => fetchPokemons(true)} />;
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar style="light" backgroundColor={colors.primary} />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style="light" backgroundColor={colors.primary} translucent={false} />
+
+      {/* Status bar background (matches header) */}
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: insets.top,
+          backgroundColor: colors.primary,
+          zIndex: 20,
+        }}
+      />
+
+      {/* Fixed header */}
       <Animated.View
         style={{
+          position: 'absolute',
+          top: insets.top,
+          left: 0,
+          right: 0,
           backgroundColor: colors.primary,
           paddingHorizontal: spacing.md,
           paddingTop: spacing.sm,
@@ -158,7 +165,6 @@ const getItemLayout = useCallback(
           borderBottomRightRadius: 20,
           elevation: 6,
           zIndex: 10,
-          opacity: headerOpacity,
         }}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
@@ -179,30 +185,28 @@ const getItemLayout = useCallback(
         </View>
       </Animated.View>
 
+      {/* Pokemon grid */}
       <FlatList
         ref={flatListRef}
         data={filteredPokemons}
-        keyExtractor={item => item.url} // ✅ more stable than name
+        keyExtractor={item => item.url}
         numColumns={numColumns}
-        renderItem={({ item }) => <PokemonCard pokemon={item} onPress={handlePress} screenWidth={screenWidth} />}
+        renderItem={({ item }) => (
+          <View style={{ flex: 1 }}>
+            <PokemonCard pokemon={item} onPress={handlePress} screenWidth={screenWidth} cardWidth={cardWidth} />
+          </View>
+        )}
         columnWrapperStyle={{ gap }}
-        contentContainerStyle={{ paddingTop: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.xl + insets.bottom, gap }}
+        contentContainerStyle={{
+          paddingTop: 140 + insets.top,
+          paddingHorizontal: spacing.md,
+          paddingBottom: spacing.xl + insets.bottom,
+          gap,
+        }}
         ListEmptyComponent={renderEmptyList}
         ListFooterComponent={() => {
-          if (loadingMore) {
-            return (
-              <View style={{ alignItems: 'center', marginTop: spacing.lg }}>
-                <PokeballLoader size={40} />
-              </View>
-            );
-          }
-          if (!hasMore && pokemons.length > 0) {
-            return (
-              <View style={{ alignItems: 'center', marginTop: spacing.xl }}>
-                <Text style={typography.caption}>You've caught them all!</Text>
-              </View>
-            );
-          }
+          if (loadingMore) return <View style={{ alignItems: 'center', marginTop: spacing.lg }}><PokeballLoader size={40} /></View>;
+          if (!hasMore && pokemons.length > 0) return <View style={{ alignItems: 'center', marginTop: spacing.xl }}><Text style={typography.caption}>You've caught them all!</Text></View>;
           return null;
         }}
         refreshControl={<RefreshControl refreshing={loadingInitial} onRefresh={handleRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
@@ -218,6 +222,7 @@ const getItemLayout = useCallback(
         getItemLayout={getItemLayout}
       />
 
+      {/* Scroll to top FAB */}
       <Animated.View
         style={{
           position: 'absolute',
@@ -229,6 +234,6 @@ const getItemLayout = useCallback(
       >
         <FAB icon="arrow-up" onPress={scrollToTop} style={{ backgroundColor: colors.card, elevation: 4 }} color={colors.primary} size="small" />
       </Animated.View>
-    </SafeAreaView>
+    </View>
   );
 }

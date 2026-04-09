@@ -10,17 +10,21 @@ interface Props {
   pokemon: PokemonListItem;
   onPress: (name: string) => void;
   screenWidth: number;
+  cardWidth?: number; 
 }
 
 const Wrapper = Platform.OS === 'android' ? TouchableNativeFeedback : Pressable;
 
-// Base64 fallback image (simple grey circle with question mark)
 const FALLBACK_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABESURBVHgB7c6xDYAwDAXR60dgBToaoAQGwPxQASV7CToaoIQM8SXrSZZlWZZlWZZlWZZlWZZlWZZlWZZlWZZlWZZl/S8xAwAA//8DAIprB+I3p8rPAAAAAElFTkSuQmCC';
 
-export const PokemonCard: React.FC<Props> = memo(({ pokemon, onPress, screenWidth }) => {
+export const PokemonCard: React.FC<Props> = memo(({ pokemon, onPress, screenWidth, cardWidth }) => {
   const id = pokemon.url.split('/').filter(Boolean).pop();
   const imageUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
-  const cardImageSize = Math.min(screenWidth * 0.15, 100);
+  
+  const imageSize = cardWidth 
+    ? Math.min(cardWidth * 0.5, 120) 
+    : Math.min(screenWidth * 0.15, 100);
+  
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const imageFadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -59,7 +63,7 @@ export const PokemonCard: React.FC<Props> = memo(({ pokemon, onPress, screenWidt
                 source={{ uri: imageUrl }}
                 defaultSource={{ uri: FALLBACK_IMAGE }}
                 onError={(e) => console.warn(`Image failed: ${imageUrl}`, e.nativeEvent.error)}
-                style={{ width: cardImageSize, height: cardImageSize, opacity: imageFadeAnim }}
+                style={{ width: imageSize, height: imageSize, opacity: imageFadeAnim }}
                 resizeMode="contain"
               />
             </View>

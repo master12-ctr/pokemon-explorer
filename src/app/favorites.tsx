@@ -3,11 +3,11 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    FlatList,
-    RefreshControl,
-    Text,
-    useWindowDimensions,
-    View
+  FlatList,
+  RefreshControl,
+  Text,
+  useWindowDimensions,
+  View
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,9 +26,8 @@ export default function FavoritesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMissing, setLoadingMissing] = useState(false);
   const { width } = useWindowDimensions();
-  const { numColumns, gap, screenWidth } = getLayout(width, 0);
+  const { numColumns, gap, screenWidth, cardWidth } = getLayout(width, 0);
 
-  // Derive favoritePokemons directly from store (no local state)
   const favoritePokemons = useMemo(() => {
     return favorites
       .map(name => {
@@ -39,7 +38,6 @@ export default function FavoritesScreen() {
       .filter(Boolean) as PokemonListItem[];
   }, [favorites, pokemonsDetails]);
 
-  // Auto-fetch missing favorites details
   useEffect(() => {
     const missing = favorites.filter(name => !pokemonsDetails[name] && !errorDetails[name]);
     if (missing.length === 0) return;
@@ -70,9 +68,9 @@ export default function FavoritesScreen() {
   );
 
   const renderItem = ({ item }: { item: PokemonListItem }) => (
-    // ✅ Removed outer margin – gap handles spacing
     <View style={{ flex: 1 }}>
-      <PokemonCard pokemon={item} onPress={handlePress} screenWidth={screenWidth} />
+
+      <PokemonCard pokemon={item} onPress={handlePress} screenWidth={screenWidth} cardWidth={cardWidth} />
     </View>
   );
 
@@ -102,7 +100,7 @@ export default function FavoritesScreen() {
       <StatusBar style="light" backgroundColor={colors.primary} />
       <FlatList
         data={favoritePokemons}
-        keyExtractor={(item) => item.url} // ✅ stable key
+        keyExtractor={(item) => item.url}
         numColumns={numColumns}
         columnWrapperStyle={{ gap }}
         renderItem={renderItem}
